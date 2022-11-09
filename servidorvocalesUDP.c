@@ -106,6 +106,16 @@ uint32_t countVowels(char msg[], size_t s)
     return result;
 }
 
+int terminar(char msg[], size_t s){
+    size_t i;
+    for (i = 0; i < s; i++)
+    {
+        if (msg[i] == fin ) return 0;
+    }
+    return s;
+    
+}
+
 /**
  * Programa principal
  *
@@ -120,13 +130,11 @@ int main(int argc, char * argv[])
     // declaración de variables propias del programa principal (locales a main)
     char f_verbose = 1;         // flag, 1: imprimir información extra
     struct addrinfo * servinfo; // dirección propia (servidor)
-    int sock, conn;             // descriptores de socket
+    int sock /*conn*/;             // descriptores de socket
     char msg[BUFF_SIZE];        // espacio para almacenar los datos recibidos
     ssize_t readbytes;          // numero de bytes recibidos
     uint32_t num, netNum;       // contador de vocales en formato local y de red
-    struct sockaddr_storage caddr; // dirección del cliente
-    socklen_t clen;             // longitud de la dirección
-
+    
     // verificación del número de parámetros:
     if (argc != 2)
     {
@@ -141,36 +149,17 @@ int main(int argc, char * argv[])
     // crea un extremo de la comunicación. Devuelve el descriptor del socket
     sock = establecer_servicio(servinfo, f_verbose);
 
-    // hay que liberar la memoria dinámica usada para la dirección
-    // cuando ya no se necesite
-    freeaddrinfo(servinfo);
-    servinfo = NULL;
-    // como ya se ha liberado ese bloque de memoria,
-    // dejamos de apuntarlo para evitar acceder a ella por error.
-    // Si referenciamos esta variable el programa abortará con
-    // ERROR: SEGMENTATION FAULT
 
     // bucle infinito para atender conexiones una tras otra
     while (1)
     {
         printf("\nEsperando conexión (pulsa <Ctrl+c> para finalizar la ejecución)...\n");
 
-        // acepta la conexión
-        clen = sizeof caddr;
-        if ((conn = accept(sock, (struct sockaddr *)&caddr, &clen)) < 0)
-        {
-            perror("Error al aceptar una nueva conexión");
-            exit(1);
-        }
-
-        // imprime la dirección obtenida
-        printf("Aceptada conexión con cliente:\n");
-        printsockaddr(&caddr);
 
         // bucle de contar vocales
         num = 0;
         do {
-            if ((readbytes = recv(conn,msg, BUFF_SIZE,0)) < 0)
+            if ((readbytes = recvfrom(sock,msg, BUFF_SIZE,0, servinfo->ai_addr, &servinfo->ai_addrlen)) < 0)
             {
                 perror("Error de lectura en el socket");
                 exit(1);
@@ -181,25 +170,26 @@ int main(int argc, char * argv[])
             // evitamos usar printf por si lo recibido no es texto acabado con \0
             num += countVowels(msg, readbytes);
             printf("Vocales contadas hasta el momento: %d\n",num);
-
+            readbytes = terminar(msg,readbytes);
         // condición de final: haber recibido 0 bytes (fin de fichero alcanzado)
         } while (readbytes > 0);
-
+        
+        
+        
+            
+        
         printf("\nSocket cerrado para lectura\n");
         printf("Contadas %d vocales\n", num);  // muestra las vocales recibidas
         netNum = htonl(num);  // convierte el entero largo sin signo hostlong
         // desde el orden de bytes del host al de la red
         // envia al cliente el número de vocales recibidas:
-        if (send(conn, &netNum, sizeof netNum,0) < 0)
+        if (sendto(sock, &netNum, sizeof netNum,0,servinfo->ai_addr, servinfo->ai_addrlen) < 0)
         {
             perror("Error de escritura en el socket");
             exit(1);
         }
         if (f_verbose) printf("Enviado número de vocales contadas al cliente\n");
 
-        // cierra la conexión con el cliente
-        close(conn);
-        if (f_verbose) printf("Cerrada la conexión con el cliente\n");
     }
 
     // código inalcanzable.

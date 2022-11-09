@@ -122,14 +122,6 @@ int main(int argc, char * argv[])
     // Devuelve el descriptor del socket
     sock = initsocket(servinfo, f_verbose);
 
-    // hay que liberar la memoria dinámica usada para la dirección
-    // cuando ya no se necesite
-
-    // como ya se ha liberado ese bloque de memoria,
-    // dejamos de apuntarlo para evitar acceder a ella por error.
-    // Si referenciamos esta variable el programa abortará con
-    // ERROR: SEGMENTATION FAULT
-
     // bucle que lee texto del teclado y lo envía al servidor
     printf("\nTeclea el texto a enviar y pulsa <Enter>, o termina con <Ctrl+d>\n");
     while ((len = read(0, msg, MAX_BUFF_SIZE)) > 0)
@@ -160,7 +152,7 @@ int main(int argc, char * argv[])
         printf("Teclea el texto a enviar y pulsa <Enter>, o termina con <Ctrl+d>\n");
     }
     sentbytes = sendto(sock,&fin ,sizeof fin, 0, servinfo->ai_addr, servinfo->ai_addrlen);
-    printf("Se ha enviado la notificación de finalizar conexión");
+    printf("Se ha enviado la notificación de finalizar conexión ");
     
     
 
