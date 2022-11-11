@@ -1,9 +1,9 @@
 /**
- * @file servidorvocalesUCP.c
+ * @file servidorvocalesUDP.c
  *
- * Programa *servidorvocalesUCP* que cuenta vocales.
+ * Programa *servidorvocalesUDP* que cuenta vocales.
  *
- * Uso: servidorvocalesUCP puerto
+ * Uso: servidorvocalesUDP puerto
  *
  * El programa crea un socket UCP en el puerto especificado.
  * Para cada cliente, recibe cadenas de texto, cuenta las vocales contenidas
