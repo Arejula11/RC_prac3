@@ -1,14 +1,13 @@
 /**
- * @file servidorvocalesTCP.c
+ * @file servidorvocalesUCP.c
  *
- * Programa *servidorvocalesTCP* que cuenta vocales.
+ * Programa *servidorvocalesUCP* que cuenta vocales.
  *
- * Uso: servidorvocalesTCP puerto
+ * Uso: servidorvocalesUCP puerto
  *
- * El programa crea un socket TCP en el puerto especificado, lo pone en modo
- * escucha y atiende consecutivamente a los clientes que se van conectando.
+ * El programa crea un socket UCP en el puerto especificado.
  * Para cada cliente, recibe cadenas de texto, cuenta las vocales contenidas
- * y al acabar todas las recepciones envía al cliente el número total de
+ * y al recibir la notificación de finalización y todas las recepciones envía al cliente el número total de
  * vocales contadas.
  */
 
@@ -35,21 +34,18 @@ const char fin = 4;
  * @param f_verbose Flag.
  * @return Descriptor de socket.
  */
-int establecer_servicio(struct addrinfo *servinfo, char f_verbose)
-{
+int establecer_servicio(struct addrinfo *servinfo, char f_verbose){
     int sock = -1;
 
     printf("\nSe usará ÚNICAMENTE la primera dirección de la estructura\n");
 
     // crea un extremo de la comunicación y devuelve un descriptor
-    if (f_verbose)
-    {
+    if (f_verbose){
         printf("Creando el socket (socket)... ");
         fflush(stdout);
     }
     sock = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol );
-    if (sock < 0)
-    {
+    if (sock < 0){
         perror("Error en la llamada socket: No se pudo crear el socket");
         // muestra por pantalla el valor de la cadena suministrada por el
         // programador, dos puntos y un mensaje de error que detalla la causa
@@ -59,21 +55,18 @@ int establecer_servicio(struct addrinfo *servinfo, char f_verbose)
     if (f_verbose) printf("hecho\n");
 
     // asocia el socket con un puerto
-    if (f_verbose)
-    {
+    if (f_verbose){
         printf("Asociando socket a puerto (bind)... ");
         fflush(stdout);
     }
-    if (bind(sock, servinfo->ai_addr, servinfo->ai_addrlen ) < 0)
-    {
+    if (bind(sock, servinfo->ai_addr, servinfo->ai_addrlen ) < 0){
         perror("Error asociando el socket");
         exit(1);
     }
     if (f_verbose) printf("hecho\n");
 
     // espera conexiones en un socket
-    if (f_verbose)
-    {
+    if (f_verbose){
         printf("Permitiendo conexiones entrantes (listen)... ");
         fflush(stdout);
     }
@@ -91,12 +84,10 @@ int establecer_servicio(struct addrinfo *servinfo, char f_verbose)
  * @param s   Longitud del mensaje.
  * @return Número de vocales en msg[0..s].
  */
-uint32_t countVowels(char msg[], size_t s)
-{
+uint32_t countVowels(char msg[], size_t s){
     uint32_t result = 0;
     size_t i;
-    for (i = 0; i < s; i++)
-    {
+    for (i = 0; i < s; i++){
         if (msg[i] == 'a' || msg[i] == 'A' ||
             msg[i] == 'e' || msg[i] == 'E' ||
             msg[i] == 'i' || msg[i] == 'I' ||
@@ -108,8 +99,7 @@ uint32_t countVowels(char msg[], size_t s)
 
 int terminar(char msg[], size_t s){
     size_t i;
-    for (i = 0; i < s; i++)
-    {
+    for (i = 0; i < s; i++){
         if (msg[i] == fin ) return 0;
     }
     return s;
@@ -125,19 +115,17 @@ int terminar(char msg[], size_t s){
  *             argumento y así sucesivamente.
  * @return 0 si todo ha ido bien, distinto de 0 si hay error.
  */
-int main(int argc, char * argv[])
-{
+int main(int argc, char * argv[]){
     // declaración de variables propias del programa principal (locales a main)
     char f_verbose = 1;         // flag, 1: imprimir información extra
     struct addrinfo * servinfo; // dirección propia (servidor)
-    int sock /*conn*/;             // descriptores de socket
+    int sock;             // descriptores de socket
     char msg[BUFF_SIZE];        // espacio para almacenar los datos recibidos
     ssize_t readbytes;          // numero de bytes recibidos
     uint32_t num, netNum;       // contador de vocales en formato local y de red
     
     // verificación del número de parámetros:
-    if (argc != 2)
-    {
+    if (argc != 2){
         printf("Número de parámetros incorrecto \n");
         printf("Uso: %s puerto\n", argv[0]);
         exit(1); // finaliza el programa indicando salida incorrecta (1)
@@ -151,16 +139,14 @@ int main(int argc, char * argv[])
 
 
     // bucle infinito para atender conexiones una tras otra
-    while (1)
-    {
+    while (1){
         printf("\nEsperando conexión (pulsa <Ctrl+c> para finalizar la ejecución)...\n");
 
 
         // bucle de contar vocales
         num = 0;
         do {
-            if ((readbytes = recvfrom(sock,msg, BUFF_SIZE,0, servinfo->ai_addr, &servinfo->ai_addrlen)) < 0)
-            {
+            if ((readbytes = recvfrom(sock,msg, BUFF_SIZE,0, servinfo->ai_addr, &servinfo->ai_addrlen)) < 0){
                 perror("Error de lectura en el socket");
                 exit(1);
             }
@@ -183,8 +169,7 @@ int main(int argc, char * argv[])
         netNum = htonl(num);  // convierte el entero largo sin signo hostlong
         // desde el orden de bytes del host al de la red
         // envia al cliente el número de vocales recibidas:
-        if (sendto(sock, &netNum, sizeof netNum,0,servinfo->ai_addr, servinfo->ai_addrlen) < 0)
-        {
+        if (sendto(sock, &netNum, sizeof netNum,0,servinfo->ai_addr, servinfo->ai_addrlen) < 0){
             perror("Error de escritura en el socket");
             exit(1);
         }

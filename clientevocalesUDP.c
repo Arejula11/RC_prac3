@@ -1,13 +1,13 @@
 /**
- * @file clientevocalesTCP.c
+ * @file clientevocalesUDP.c
  *
- * Programa *clientevocalesTCP* que envía cadenas de texto a un servidor.
+ * Programa *clientevocalesUDP* que envía cadenas de texto a un servidor.
  *
- * Uso: clientevocalesTCP servidor puerto
+ * Uso: clientevocalesUDP servidor puerto
  *
- * El programa crea un socket TCP y lo conecta al servidor y puerto especificado.
+ * El programa crea un socket UDP y lo conecta al servidor y puerto especificado.
  * A través del socket envía cadenas de caracteres hasta llegar a fin de fichero
- * (Control+d para provocarlo desde la entrada estándar).
+ * (Control+d para provocarlo desde la entrada estándar) y avisa al servidor UDP de la finalización de conexión.
  * Finalmente, espera como respuesta el número total de vocales en las
  * cadenas enviadas e imprime dicho valor por pantalla.
  */
@@ -34,31 +34,26 @@ const char fin = 4;
  * @param f_verbose Flag.
  * @return Descriptor de socket.
  */
-int initsocket(struct addrinfo *servinfo, char f_verbose)
-{
+int initsocket(struct addrinfo *servinfo, char f_verbose){
     int sock = -1;
     int numdir = 1;
 
-    while (servinfo != NULL && sock < 0)
-    {   // bucle que recorre la lista de direcciones
+    while (servinfo != NULL && sock < 0){   // bucle que recorre la lista de direcciones
         printf("Intentando conexión con dirección %d:\n", numdir);
 
         // crea un extremo de la comunicación y devuelve un descriptor
-        if (f_verbose)
-        {
+        if (f_verbose){
             printf("Creando el socket (socket)... ");
             fflush(stdout);
         }
         sock = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
-        if (sock < 0)
-        {
+        if (sock < 0){
             perror("Error en la llamada socket: No se pudo crear el socket");
             // muestra por pantalla el valor de la cadena suministrada por el
             // programador, dos puntos y un mensaje de error que detalla la
             // causa del error cometido
         }
-        else
-        {   // socket creado correctamente
+        else{   // socket creado correctamente
             if (f_verbose) printf("hecho\n");
 
             // inicia una conexión en el socket:
@@ -74,9 +69,7 @@ int initsocket(struct addrinfo *servinfo, char f_verbose)
         servinfo = servinfo->ai_next;
         numdir++;
     }
-
-    if (sock < 0)
-    {
+    if (sock < 0){
         perror("No se ha podido establecer la comunicación");
         exit(1);
     }
@@ -93,8 +86,7 @@ int initsocket(struct addrinfo *servinfo, char f_verbose)
  *             argumento y así sucesivamente.
  * @return 0 si todo ha ido bien, distinto de 0 si hay error.
  */
-int main(int argc, char * argv[])
-{
+int main(int argc, char * argv[]){
     // declaración de variables propias del programa principal (locales a main)
     char f_verbose = 1;         // flag, 1: imprimir información extra
     struct addrinfo * servinfo; // puntero a estructura de dirección destino
@@ -107,8 +99,7 @@ int main(int argc, char * argv[])
     uint32_t num;      // variable donde anotar el número de vocales
 
     // verificación del número de parámetros:
-    if (argc != 3)
-    {
+    if (argc != 3){
         printf("Número de parámetros incorrecto \n");
         printf("Uso: %s servidor puerto/servicio\n", argv[0]);
         exit(1); // finaliza el programa indicando salida incorrecta (1)
@@ -124,8 +115,7 @@ int main(int argc, char * argv[])
 
     // bucle que lee texto del teclado y lo envía al servidor
     printf("\nTeclea el texto a enviar y pulsa <Enter>, o termina con <Ctrl+d>\n");
-    while ((len = read(0, msg, MAX_BUFF_SIZE)) > 0)
-    {
+    while ((len = read(0, msg, MAX_BUFF_SIZE)) > 0){
         // read lee del descriptor 0 (entrada estándar, por defecto el teclado)
         // hasta que se pulsa INTRO,
         // almacena en msg la cadena leída y
@@ -133,13 +123,11 @@ int main(int argc, char * argv[])
         if (f_verbose) printf("  Leídos %zd bytes\n", len);
 
         // envía datos al socket
-        if ((sentbytes = sendto(sock,msg ,len, 0, servinfo->ai_addr, servinfo->ai_addrlen)) < 0)
-        {
+        if ((sentbytes = sendto(sock,msg ,len, 0, servinfo->ai_addr, servinfo->ai_addrlen)) < 0){
             perror("Error de escritura en el socket");
             exit(1);
         }
-        else
-        {
+        else{
             if (f_verbose) printf("  Enviados %zd bytes al servidor\n",sentbytes);
         }
         
@@ -157,16 +145,14 @@ int main(int argc, char * argv[])
     
 
     // el servidor verá la conexión cerrada y enviará el número de vocales
-    if (f_verbose)
-    {
+    if (f_verbose){
         printf("hecho\nEsperando respuesta del servidor...");
         fflush(stdout);
     }
 
     // recibe del servidor el número de vocales recibidas:
     recvbytes = recvfrom(sock, &num ,sizeof num , 0, servinfo->ai_addr, &servinfo->ai_addrlen);
-    if (recvbytes != sizeof num)
-    {
+    if (recvbytes != sizeof num){
         printf("Recibidos %lu bytes en lugar de los %lu esperados", recvbytes, sizeof num);
         exit(1);
     }
@@ -175,13 +161,11 @@ int main(int argc, char * argv[])
     // convierte el entero largo sin signo de formato de red a formato de host
 
     // cierra la conexión del socket
-    if (close(sock) < 0)
-    {
+    if (close(sock) < 0){
         perror("Error al cerrar el socket");
         exit(1);
     }
-    else
-    {
+    else{
         if (f_verbose) printf("Socket cerrado\n");
     }
 
